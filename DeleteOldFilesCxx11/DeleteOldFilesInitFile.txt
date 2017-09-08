@@ -1,0 +1,7 @@
+//"f:\Zavla_VB\DeleteOldFilesCxx11\DeleteOldFilesCxx11\testCase\" 2days "(buh_promo7_)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{3}(.*)"
+//TODO: https://courses.edx.org/courses/course-v1:Microsoft+DEV210.2x+3T2016/courseware/ebe558b31dd14a46a15040bd355ff9f9/44fc0e289c194196a0d0dd1fe9fc2374/
+"j:\b\"  4days (A2)_[0-9]{4}-[0-9]{2}-[0-9]{2}T.*
+"j:\b\"  4days (Armatura_posle01042011)_[0-9]{4}-[0-9]{2}-[0-9]{2}T.*
+
+
+
