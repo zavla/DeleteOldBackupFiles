@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\source_to_test">
+      <UniqueIdentifier>{2a3d1d04-3039-4d09-9ed3-e9ea0da50186}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -20,6 +23,12 @@
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DeleteOldFilesCxx11\InitFile.h">
+      <Filter>Source Files\source_to_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DeleteOldFilesCxx11\row2.h">
+      <Filter>Source Files\source_to_test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
