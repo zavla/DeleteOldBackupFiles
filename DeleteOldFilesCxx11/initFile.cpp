@@ -7,29 +7,26 @@
 #include "InitFile.h"
 
 namespace my {
-	/*! deletes quotes from string*/
-	void clear_quotes(std::string& quoted_string) {
-		auto pos = quoted_string.find_first_of('"');
-		while (pos != std::string::npos) {
-			quoted_string.erase(pos, 1);
-			pos = quoted_string.find_first_of('"');
-		}
-	}
+	
 
-	bool readInitFile(std::vector<row> & v, std::string& Initfilename) 
+	/*! deletes quotes from string*/
+
+	bool readInitFile(std::vector<row> & v, std::wstring& Initfilename) 
 	{
-		/*!
-		file format is:
-		"j:\b\"  4days (ubcd_sklad_2010)_[0-9]{4}-[0-9]{2}-[0-9]{2}T.*
-		*/
-		std::ifstream ifs{ Initfilename.c_str() };
+		//!
+		//file format is:
+		//"j:\b\"  4days (ubcd_sklad_2010)_[0-9]{4}-[0-9]{2}-[0-9]{2}T.*
+		//
+		std::ifstream ifs{ Initfilename };
 		if (!ifs.is_open()) //only when file not found
 		{
 
 
-			std::cerr << "was unable to open file: " << '\n'
-				<< Initfilename.c_str() << '\n'
-				<< strerror(errno);
+			std::wcerr << "was unable to open file: " << '\n'
+				<< Initfilename << '\n'
+				// ReSharper disable CppDeprecatedEntity
+				<< my::from_utf8_to_ucs2<std::wstring>(strerror(errno));
+			// ReSharper restore CppDeprecatedEntity
 			return false;
 		}
 		row ff;
@@ -40,6 +37,7 @@ namespace my {
 			linenumber++;
 			auto LineReadResult = ff.LoadLine(line1); //actualy loading line into row object
 			if (LineReadResult == LoadLineRetvalue::add) {
+				ff.line_num_in_file_ = linenumber;
 				v.push_back(ff);
 				ff.clear();
 
@@ -47,7 +45,7 @@ namespace my {
 			else if (LineReadResult == LoadLineRetvalue::ignore) {
 			}
 			else {
-				std::cerr << "Error: was unable to read line " << linenumber << '\n';
+				std::wcerr << "Error: was unable to read line " << linenumber << '\n';
 				continue;
 
 			};

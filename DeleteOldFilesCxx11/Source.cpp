@@ -1,26 +1,23 @@
-﻿#include <string>
+﻿#include <fcntl.h> //for _setmode(,_O_U16TEXT)
+#include <io.h> //for _setmode(,_O_U16TEXT)
+#include <string>
 #include <vector>
 #include <filesystem>
-//#include <sstream>
 #include <iostream>
 #include <chrono>
 #include <regex>
 #include <map>
-//#include <fstream>
-
-//#include "boost\algorithm\string.hpp"
 
 #include "InitFile.h"
-//#include "boost/filesystem.hpp"
+
+//Have made a CLASS regex_traits<char16_t>  specialization for the basic_regex<char16_t>
 
 namespace fs = std::experimental::filesystem;
-//namespace boo = boost::algorithm;
 
-//using namespace std::literals::chrono_literals;
-//using namespace std::literals::string_literals;
 
 namespace my {
 
+	using match_results_u16 = std::match_results<std::u16string::const_iterator>;
 
 	enum class return_codes_from_main{ 
 		success = 0
@@ -29,9 +26,8 @@ namespace my {
 		
 	};
 
-	//int DeleteOldBackups ( std::string & initFileName );
 
-	return_codes_from_main delete_old_backups(std::string& init_file_name);
+	return_codes_from_main delete_old_backups(std::string& init_file_name); //forward declaration
 
 	void action_on_file ( fs::path & each_file_path ); //forward declaration
 
@@ -51,69 +47,92 @@ namespace my {
 	 * \param filename 
 	 * \return 
 	 */
-	bool is_this_a_full_backup(const std::string & filename)
+	template<typename T>
+	bool is_this_a_full_backup(const T & filename)
 	{
-		return (filename.find("-FULL") != std::string::npos) 
-			|| (filename.find("-full") != std::string::npos);
+		return (filename.find(u"-FULL") != std::string::npos) 
+			|| (filename.find(u"-full") != std::string::npos);
 
 	}
+
+	const wchar_t * to_wchar_ptr(const std::u16string& s)
+	{
+		
+		return reinterpret_cast<const wchar_t *>(s.data());
+	};
+
 	/**
-	 * \brief Deletes old files according to init file.
+	 * \brief Deletes old files according to settings in init file.
 	 * \param init_file_name is a init file name. 
 	 * \return 0 for success.
 	 */
-	return_codes_from_main delete_old_backups(std::string& init_file_name) {
+	return_codes_from_main delete_old_backups(std::wstring& init_file_name) {
 		
+		_setmode(_fileno(stdout), _O_U16TEXT); //to display cyrilic in wcout
+
 		std::vector<row> folders_from_init_file; //from init file, holds folders, file patterns, durations
 
 		if ( !my::readInitFile ( folders_from_init_file , init_file_name ) ) {
-			std::cerr << "Error reading file " + init_file_name;
+			std::wcerr << L"Error reading file " << init_file_name << '\n';
 			return my::return_codes_from_main::error_reading_init_file;
 		}
 		
 		//to lookup file name pattern
-		const std::regex		nashfile("[(](.*)[)]_.*"); 
-		//match_results of nashfile
-		std::smatch results;
+		const std::basic_regex<char16_t, std::regex_traits<char16_t>>
+			nashfile(u"[(](.*)[)].*"); 
+		
+				
+		match_results_u16 results;
 
 		for ( auto& one_init_row : folders_from_init_file )
 		{
 			auto folder_name = one_init_row.m_dir;
 			
 			//FilesPatternModTime is a multimap with file names and modification times
-			std::multimap< std::string , fs::file_time_type>		files_pattern_mod_time; 
+			std::multimap< std::u16string , fs::file_time_type>
+				files_pattern_mod_time; 
 
 			//files are grouped  by first letters(petterns) in the name loaded from init file
 			
 			
-			std::string			start_symbols_of_file_name{};
-			if (std::regex_match(one_init_row.m_fullpattern, results, nashfile)) { //to do not delete any other files then current pattern
+			std::u16string			start_symbols_of_file_name{};
+			if (std::regex_match ( one_init_row.m_fullpattern , results , nashfile)) { //to do not delete any other files then current pattern
 				if (results.size() > 1)
 				{
 					start_symbols_of_file_name = results[1];
 				}
 			}
 			if (start_symbols_of_file_name.empty()) {
-				std::cout << "An error in file name pattern at ini file: \n"+one_init_row.m_fullpattern;
+				std::wcout << L"An error in file name pattern at ini file: \n" << to_wchar_ptr(one_init_row.m_fullpattern) << '\n';
+				/*std::wcout << reinterpret_cast<const wchar_t *>(one_init_row.m_fullpattern.data());*/
 				continue;
 			}
 			
 			//path objects (files) for every line of init file
 			std::vector<fs::path>		all_files ; 
 			
-			clear_quotes ( folder_name);
+			my::clear_quotes ( folder_name);
 
 			std::chrono::hours	row::*		column;
 			column = &row::m_full_store;
 
 			//for each line of init file there is a pattern of files name
-			std::regex		rexp ( one_init_row.m_fullpattern ); 
+			std::basic_regex<char16_t>		rexp ( one_init_row.m_fullpattern );
 
+			if ( ! fs::exists(folder_name) 
+				|| ! fs::is_directory(folder_name))
+			{
+				//system("chcp 1251");
+				//std::cout << GetConsoleOutputCP();
+				_setmode(_fileno(stdout),_O_U16TEXT);
+				std::wcout << L"No folder found: " << to_wchar_ptr(folder_name) << " from init file line number " << one_init_row.line_num_in_file_ << '\n';
+				continue;
+			}
 			//1st pass
 			fs::directory_iterator		each_file_iterator ( folder_name );
-			for ( auto& each_file : each_file_iterator )
+			for ( const auto& each_file : each_file_iterator )
 			{
-				auto filename = each_file.path ( ).filename ( ).string ( );
+				auto filename = each_file.path ( ).filename ( ).u16string();
 				bool this_is_a_full_back_up = is_this_a_full_backup(filename);
 
 
@@ -152,11 +171,11 @@ namespace my {
 			
 			//2nd pass over selected at 1st pass files to decide if there is a newer copy of full copy of this database backup files 
 
-			for ( auto it = all_files.begin ( ); it != all_files.end ( ); ++it ) {
+			for ( auto it = all_files.cbegin ( ); it != all_files.cend ( ); ++it ) {
 				
 				auto each_file_path = *it;
 				
-				auto filename = each_file_path.filename ( ).string ( );
+				auto filename = each_file_path.filename ( ).u16string ( );
 				fs::file_time_type		mod_time;
 
 				if (my::is_this_a_full_backup(filename))
@@ -219,13 +238,13 @@ namespace my {
 	void action_on_file ( fs::path& each_file_path ) {
 		try
 		{
-#define	DEBUGRENAME
-#ifdef DEBUGRENAME
+
+#ifdef _DEBUG
 			/*fs::path	newname ( each_file_path );
 			newname.replace_filename ( "_" + each_file_path.filename ( ).string ( ) );
 			fs::rename ( each_file_path , newname );
 			*/
-			std::cout << "deleting file " << each_file_path.filename().string().c_str() << "\n";
+			std::wcout << L"deleting file " << each_file_path.filename().wstring() << "\n";
 #else
 
 			fs::remove ( each_file_path );
@@ -244,10 +263,15 @@ namespace my {
 int main ( size_t argc , char* args[] ) {
 	if ( argc != 2 )
 	{
-		std::cerr << "Usage: DeleteOldFiles <full_path_to_init_file> 2><error_file_name>" << '\n';
+		std::wcerr << L"Usage: DeleteOldFiles <full_path_to_init_file>" << '\n';
+
+		std::wcout << R"(init file content are lines with:
+		"j:\b\"  4days (databasenamehere)_[0-9]{4}-[0-9]{2}-[0-9]{2}T.*
+		)";
 		return 1;
 	}
-	auto init_file_name = std::string ( args [ 1 ] );
+	auto init_file_name = std::wstring ( my::from_utf8_to_ucs2 < std::wstring > (args [ 1 ]) );
 	//Google for education
-	return static_cast<int>(	my::delete_old_backups ( init_file_name ));
+	//Michael Kaplan
+	return static_cast<int>( my::delete_old_backups ( init_file_name ) );
 }

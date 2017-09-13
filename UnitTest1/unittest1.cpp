@@ -5,7 +5,8 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-template<> static
+template<> 
+static
 std::wstring 
 	Microsoft::VisualStudio::CppUnitTestFramework::
 ToString<my::LoadLineRetvalue> (const my::LoadLineRetvalue & r){
